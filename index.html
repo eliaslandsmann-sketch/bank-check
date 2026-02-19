@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a0a0f">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <title>Bank-Check</title>
+  <style>
+    :root {
+      --bg: #0a0a0f; --card: #16161d; --card2: #1e1e28;
+      --text: #f0f0f5; --text2: #9090a0; --text3: #606070;
+      --green: #22c55e; --red: #ef4444; --yellow: #eab308;
+      --accent: #3b82f6;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+      background: var(--bg); color: var(--text); min-height: 100vh;
+      min-height: -webkit-fill-available; overflow-x: hidden;
+    }
+    input, select { font-family: ui-monospace, 'SF Mono', monospace; font-size: 16px !important; }
+
+    .app { padding: 16px 16px 32px; max-width: 500px; margin: 0 auto; }
+
+    .header { text-align: center; padding: 20px 0 24px; border-bottom: 1px solid var(--card2); margin-bottom: 20px; }
+    .header h1 { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .header p { font-size: 13px; color: var(--text3); }
+
+    .checks { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .check {
+      background: var(--card); border-radius: var(--radius); padding: 16px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      border: 2px solid transparent; transition: all 0.2s;
+    }
+    .check.pass { border-color: var(--green); background: rgba(34, 197, 94, 0.08); }
+    .check.fail { border-color: var(--red); background: rgba(239, 68, 68, 0.08); }
+    .check-left { display: flex; align-items: center; gap: 14px; }
+    .check-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 700;
+    }
+    .check.pass .check-icon { background: rgba(34, 197, 94, 0.2); color: var(--green); }
+    .check.fail .check-icon { background: rgba(239, 68, 68, 0.2); color: var(--red); }
+    .check-label { font-size: 14px; color: var(--text2); }
+    .check-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .check-value { font-size: 22px; font-weight: 700; font-family: ui-monospace, monospace; text-align: right; }
+    .check-value-sub { font-size: 11px; color: var(--text3); font-weight: 500; }
+    .check.pass .check-value { color: var(--green); }
+    .check.fail .check-value { color: var(--red); }
+
+    .summary { background: var(--card); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; text-align: center; }
+    .summary-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .summary-value { font-size: 15px; color: var(--text2); line-height: 1.5; }
+    .summary-value strong { color: var(--text); }
+
+    .angebot {
+      background: linear-gradient(135deg, #0f2a1f 0%, #1a2e1a 100%);
+      border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
+      border: 2px solid rgba(34, 197, 94, 0.4); text-align: center;
+    }
+    .angebot-title { font-size: 12px; color: var(--green); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; font-weight: 600; }
+    .angebot-value { font-size: 42px; font-weight: 700; font-family: ui-monospace, monospace; color: var(--green); margin: 8px 0; }
+    .angebot-sub { font-size: 12px; color: var(--text3); }
+    .angebot-details { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .angebot-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; }
+    .angebot-row-label { color: var(--text2); }
+    .angebot-row-value { font-family: ui-monospace, monospace; font-weight: 600; }
+    .angebot-row-value.green { color: var(--green); }
+    .angebot-row-value.red { color: var(--red); }
+
+    .szenario {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border-radius: var(--radius); padding: 20px; margin-bottom: 20px;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    .szenario-title { font-size: 12px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; font-weight: 600; }
+    .szenario-row { display: flex; justify-content: space-between; padding: 8px 0; }
+    .szenario-label { font-size: 13px; color: var(--text2); }
+    .szenario-value { font-size: 13px; font-family: ui-monospace, monospace; font-weight: 600; }
+    .szenario-value.green { color: var(--green); }
+    .szenario-value.red { color: var(--red); }
+    .szenario-divider { border-top: 1px solid rgba(255,255,255,0.1); margin: 8px 0; }
+
+    .section { background: var(--card); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+    .section-header {
+      padding: 14px 20px; font-size: 12px; font-weight: 600; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 1px;
+      display: flex; justify-content: space-between; align-items: center;
+      cursor: pointer; user-select: none; border-bottom: 1px solid var(--card2);
+    }
+    .section-header span { font-size: 16px; transition: transform 0.2s; color: var(--text3); }
+    .section-header.closed span { transform: rotate(-90deg); }
+    .section-body { padding: 8px 20px 16px; }
+    .section-body.hidden { display: none; }
+
+    .input-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--card2); }
+    .input-row:last-child { border-bottom: none; }
+    .input-label { font-size: 14px; color: var(--text); }
+    .input-hint { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .input-wrap { display: flex; align-items: center; gap: 6px; background: var(--card2); border-radius: 10px; padding: 10px 14px; }
+    .input-wrap input { width: 80px; background: transparent; border: none; outline: none; color: var(--text); text-align: right; font-weight: 600; }
+    .input-wrap select {
+      background: transparent; border: none; outline: none; color: var(--text); font-weight: 600; cursor: pointer;
+      -webkit-appearance: none; appearance: none; padding-right: 20px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239090a0' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right center;
+    }
+    .input-wrap .unit { color: var(--text3); font-size: 13px; font-weight: 500; }
+
+    .bank-info { background: var(--card); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 12px; }
+    .bank-info-title { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .bank-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--card2); }
+    .bank-row:last-child { border-bottom: none; }
+    .bank-row-label { font-size: 13px; color: var(--text2); }
+    .bank-row-value { font-size: 13px; font-family: ui-monospace, monospace; font-weight: 600; color: var(--text); }
+    .bank-row-value.dim { color: var(--text3); }
+    .bank-row-value.green { color: var(--green); }
+    .bank-row-value.red { color: var(--red); }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+
+  <script>
+    const fmt = (v) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(v);
+    const pct = (v) => (v * 100).toFixed(1) + '%';
+
+    // Standort-Benchmarks (Marktmieten: Durchschnitt alle Quellen | KP/Ankauf: MD Jan 2025)
+    const BENCHMARKS = {
+      manuell: { name: "Manuell", marktmiete: 0, mfhPreis: 0, maxAnkauf: 0 },
+      erfurt: { name: "Erfurt", marktmiete: 11.13, mfhPreis: 1800, maxAnkauf: 1260, lz: 4.5 },
+      gotha: { name: "Gotha", marktmiete: 6.88, mfhPreis: 1700, maxAnkauf: 1190, lz: 4.56 },
+      eisenach: { name: "Eisenach", marktmiete: 6.97, mfhPreis: 1700, maxAnkauf: 1190, lz: 4.56 },
+      arnstadt: { name: "Arnstadt", marktmiete: 6.83, mfhPreis: 1700, maxAnkauf: 1190, lz: 5.0 },
+      leipzig: { name: "Leipzig", marktmiete: 10.02, mfhPreis: 1700, maxAnkauf: 1190, lz: 4.5 },
+    };
+
+    let state = {
+      standort: 'manuell', kp: 300000, marktwert: 400000, qm: 100, miete: 5.50, marktmiete: 7.00,
+      nk: 10.5, bewirtschaftung: 15, zins: 4.0, tilg: 2.0, zielEkRendite: 15,
+      ekManual: null, // null = auto (NK), Zahl = manuell
+      sections: { objekt: true, finanz: true, kapital: true }
+    };
+
+    try { const saved = localStorage.getItem('immo-bank-v3'); if (saved) state = { ...state, ...JSON.parse(saved) }; } catch(e) {}
+    const save = () => { try { localStorage.setItem('immo-bank-v3', JSON.stringify(state)); } catch(e) {} };
+
+    const calc = () => {
+      const { standort, kp, marktwert, qm, miete, marktmiete, nk, bewirtschaftung, zins, tilg, zielEkRendite } = state;
+      const bench = BENCHMARKS[standort];
+      const effMarktmiete = standort === 'manuell' ? marktmiete : bench.marktmiete;
+
+      const istMieteJahr = miete * qm * 12;
+      const bankMieteJahr = istMieteJahr * 0.75;
+
+      // Mietpotenzial
+      const mietDiff = effMarktmiete - miete;
+      const mietPotenzialProzent = effMarktmiete > 0 ? (mietDiff / miete) * 100 : 0;
+      const mietErhoehungMoeglich = miete < effMarktmiete;
+
+      // Nach 15% Steigerung
+      const mieteNach15 = miete * 1.15;
+      const mieteNach15Jahr = mieteNach15 * qm * 12;
+      const mieteNach15Diff = effMarktmiete - mieteNach15;
+      const noch15MoeglichNach = mieteNach15 < effMarktmiete;
+
+      // Kosten
+      const nkEur = kp * (nk / 100);
+      const bewirtschaftungJahr = istMieteJahr * (bewirtschaftung / 100);
+      const bewirtschaftungReal = istMieteJahr * 0.10;
+
+      const ekAuto = nkEur;
+      const ek = state.ekManual !== null ? state.ekManual : ekAuto;
+      const fk = kp;
+
+      const zinsenJahr = fk * (zins / 100);
+      const tilgungJahr = fk * (tilg / 100);
+      const kapitaldienstJahr = zinsenJahr + tilgungJahr;
+
+      // Tatsächlicher Cashflow (mit 15% Bewirtschaftung)
+      const bewirtschaftungRealProzent = 0.15;
+      const bewirtschaftungRealNeu = istMieteJahr * bewirtschaftungRealProzent;
+      const cfRealJahr = istMieteJahr - bewirtschaftungRealNeu - kapitaldienstJahr;
+      const cfRealMonat = cfRealJahr / 12;
+
+      // MAX ANGEBOTSPREIS: Bei welchem KP deckt JNKM die Kreditrate?
+      // JNKM * 0.85 = KP * (Zins + Tilg) => KP = (JNKM * 0.85) / (Zins + Tilg)
+      // 15% nicht umlagefähige Bewirtschaftungskosten (realistisch)
+      const kpCfNeutral = (istMieteJahr * 0.85) / ((zins + tilg) / 100);
+      const kpDiffCfNeutral = kp - kpCfNeutral;
+
+      // Bank-Cashflow
+      const cfBankJahr = bankMieteJahr - bewirtschaftungJahr - kapitaldienstJahr;
+      const cfBankMonat = cfBankJahr / 12;
+
+      // Nach 15% Mietsteigerung (auch mit 15% Bewirtschaftung)
+      const bewirtschaftungRealNach15 = mieteNach15Jahr * 0.15;
+      const cfRealNach15Jahr = mieteNach15Jahr - bewirtschaftungRealNach15 - kapitaldienstJahr;
+      const cfRealNach15Monat = cfRealNach15Jahr / 12;
+      const bankMieteNach15 = mieteNach15Jahr * 0.75;
+      const bewirtschaftungJahrNach15 = mieteNach15Jahr * (bewirtschaftung / 100);
+      const cfNach15Jahr = bankMieteNach15 - bewirtschaftungJahrNach15 - kapitaldienstJahr;
+      const cfNach15Monat = cfNach15Jahr / 12;
+
+      // EK-Rendite (tatsächlicher CF + Tilgung) / EK
+      const ekRendite = ek > 0 ? (cfRealJahr + tilgungJahr) / ek : 0;
+      const ekRenditeNach15 = ek > 0 ? (cfRealNach15Jahr + tilgungJahr) / ek : 0;
+
+      const kpZuMarktwert = marktwert > 0 ? kp / marktwert : 1;
+
+      // Brutto-Rendite & Faktor
+      const bruttoRendite = istMieteJahr / kp;
+      const faktor = istMieteJahr > 0 ? kp / istMieteJahr : 0;
+      const bruttoRenditeNach15 = mieteNach15Jahr / kp;
+      const faktorNach15 = mieteNach15Jahr > 0 ? kp / mieteNach15Jahr : 0;
+
+      // Max. Kreditrate für CF-neutral
+      const maxKreditrateCfNeutral = ((istMieteJahr * 0.90) / kp) * 100;
+
+      // KP für BANK-CF-neutral: Bank-Miete (75%) - Bewirtschaftung (15%) = Kreditrate
+      // => (JNKM × 0.75 × 0.85) / (Zins + Tilg)
+      const kpBankCfNeutral = (istMieteJahr * 0.75 * 0.85) / ((zins + tilg) / 100);
+      const kpDiffBankCfNeutral = kp - kpBankCfNeutral;
+
+      // Checks
+      const checkCashflow = cfBankJahr >= 0;
+      const checkEkRendite = ekRendite >= (zielEkRendite / 100);
+      const checkMarktwert = kpZuMarktwert <= 0.70;
+      const checkMietpotenzial = mietErhoehungMoeglich;
+      const alleChecksOk = checkCashflow && checkEkRendite && checkMarktwert && checkMietpotenzial;
+      const anzahlChecksOk = [checkCashflow, checkEkRendite, checkMarktwert, checkMietpotenzial].filter(Boolean).length;
+
+      return {
+        bench, effMarktmiete, istMieteJahr, bankMieteJahr, mietDiff, mietPotenzialProzent, mietErhoehungMoeglich,
+        mieteNach15, mieteNach15Jahr, mieteNach15Diff, noch15MoeglichNach,
+        nkEur, bewirtschaftungJahr, bewirtschaftungRealNeu, ek, ekAuto, fk, zinsenJahr, tilgungJahr, kapitaldienstJahr,
+        cfBankJahr, cfBankMonat, cfRealJahr, cfRealMonat, kpCfNeutral, kpDiffCfNeutral, maxKreditrateCfNeutral, kpBankCfNeutral, kpDiffBankCfNeutral,
+        cfNach15Jahr, cfNach15Monat, cfRealNach15Jahr, cfRealNach15Monat,
+        ekRendite, ekRenditeNach15, kpZuMarktwert, bruttoRendite, faktor, bruttoRenditeNach15, faktorNach15,
+        checkCashflow, checkEkRendite, checkMarktwert, checkMietpotenzial, alleChecksOk, anzahlChecksOk
+      };
+    };
+
+    const render = () => {
+      const b = calc();
+      const app = document.getElementById('app');
+      const standortOptions = Object.entries(BENCHMARKS).map(([key, val]) =>
+        `<option value="${key}" ${state.standort === key ? 'selected' : ''}>${val.name}</option>`
+      ).join('');
+
+      app.innerHTML = `
+        <div class="app">
+          <div class="header">
+            <h1>Bank-Check</h1>
+            <p>Schnellprüfung aus Finanzierungssicht</p>
+          </div>
+
+          <!-- ========== EINGABEN OBEN ========== -->
+
+          <!-- Objektdaten -->
+          <div class="section">
+            <div class="section-header ${state.sections.objekt ? '' : 'closed'}" onclick="toggle('objekt')">
+              Objektdaten <span>▼</span>
+            </div>
+            <div class="section-body ${state.sections.objekt ? '' : 'hidden'}">
+              <div class="input-row">
+                <div><div class="input-label">Standort</div><div class="input-hint">Benchmark für Marktmiete</div></div>
+                <div class="input-wrap"><select onchange="updateStandort(this.value)">${standortOptions}</select></div>
+              </div>
+              <div class="input-row">
+                <div><div class="input-label">Kaufpreis</div></div>
+                <div class="input-wrap"><input type="number" inputmode="numeric" value="${state.kp}" onchange="update('kp', this.value)"><span class="unit">€</span></div>
+              </div>
+              <div class="input-row">
+                <div><div class="input-label">Marktwert</div><div class="input-hint">Für 70%-Check</div></div>
+                <div class="input-wrap"><input type="number" inputmode="numeric" value="${state.marktwert}" onchange="update('marktwert', this.value)"><span class="unit">€</span></div>
+              </div>
+              <div class="input-row">
+                <div><div class="input-label">Wohnfläche</div></div>
+                <div class="input-wrap"><input type="number" inputmode="decimal" value="${state.qm}" onchange="update('qm', this.value)"><span class="unit">m²</span></div>
+              </div>
+              <div class="input-row">
+                <div><div class="input-label">IST-Miete</div><div class="input-hint">Aktuelle Kaltmiete</div></div>
+                <div class="input-wrap"><input type="number" inputmode="decimal" value="${state.miete}" step="0.1" onchange="update('miete', this.value)"><span class="unit">€/m²</span></div>
+              </div>
+              ${state.standort === 'manuell' ? `
+              <div class="input-row">
+                <div><div class="input-label">Marktmiete</div><div class="input-hint">Ortsübliche Vergleichsmiete</div></div>
+                <div class="input-wrap"><input type="number" inputmode="decimal" value="${state.marktmiete}" step="0.1" onchange="update('marktmiete', this.value)"><span class="unit">€/m²</span></div>
+              </div>
+              ` : `
+              <div class="input-row">
+                <div><div class="input-label">Marktmiete</div><div class="input-hint">${b.bench.name} Benchmark</div></div>
+                <div style="color: var(--accent); font-weight: 600; font-family: ui-monospace, monospace;">${b.effMarktmiete.toFixed(2)} €/m²</div>
+              </div>
+              `}
+            </div>
+          </div>
+
+          <!-- Finanzierung -->
+          <div class="section">
+            <div class="section-header ${state.sections.finanz ? '' : 'closed'}" onclick="toggle('finanz')">
+              Finanzierung <span>▼</span>
+            </div>
+            <div class="section-body ${state.sections.finanz ? '' : 'hidden'}">
+              <div class="input-row">
+                <div><div class="input-label">Zinssatz</div></div>
+                <div class="input-wrap"><input type="number" inputmode="decimal" value="${state.zins}" step="0.1" onchange="update('zins', this.value)"><span class="unit">%</span></div>
+              </div>
+              <div class="input-row">
+                <div><div class="input-label">Tilgung</div></div>
+                <div class="input-wrap"><input type="number" inputmode="decimal" value="${state.tilg}" step="0.1" onchange="update('tilg', this.value)"><span class="unit">%</span></div>
+              </div>
+              <div class="input-row">
+                <div><div class="input-label">Kaufnebenkosten</div></div>
+                <div class="input-wrap"><input type="number" inputmode="decimal" value="${state.nk}" step="0.5" onchange="update('nk', this.value)"><span class="unit">%</span></div>
+              </div>
+              <div class="input-row">
+                <div><div class="input-label">Bewirtschaftung</div><div class="input-hint">Nicht umlagefähig (Bank)</div></div>
+                <div class="input-wrap"><input type="number" inputmode="decimal" value="${state.bewirtschaftung}" step="1" onchange="update('bewirtschaftung', this.value)"><span class="unit">%</span></div>
+              </div>
+              <div class="input-row">
+                <div><div class="input-label">Ziel EK-Rendite</div></div>
+                <div class="input-wrap"><input type="number" inputmode="decimal" value="${state.zielEkRendite}" step="1" onchange="update('zielEkRendite', this.value)"><span class="unit">%</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Kapital -->
+          <div class="section">
+            <div class="section-header ${state.sections.kapital ? '' : 'closed'}" onclick="toggle('kapital')">
+              Kapitaleinsatz <span>▼</span>
+            </div>
+            <div class="section-body ${state.sections.kapital ? '' : 'hidden'}">
+              <div class="input-row">
+                <div><div class="input-label">Fremdkapital</div><div class="input-hint">100% Kaufpreis</div></div>
+                <div style="color: var(--text); font-weight: 600; font-family: ui-monospace, monospace;">${fmt(b.fk)}</div>
+              </div>
+              <div class="input-row">
+                <div><div class="input-label">Nebenkosten</div><div class="input-hint">${state.nk}% vom KP</div></div>
+                <div style="color: var(--text2); font-weight: 600; font-family: ui-monospace, monospace;">${fmt(b.nkEur)}</div>
+              </div>
+              <div class="input-row">
+                <div>
+                  <div class="input-label">Eigenkapital</div>
+                  <div class="input-hint">${state.ekManual !== null ? 'Manuell' : 'Auto = NK'} <button onclick="resetEk()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:11px;padding:0;margin-left:4px;">${state.ekManual !== null ? '↺ Reset' : ''}</button></div>
+                </div>
+                <div class="input-wrap"><input type="number" inputmode="numeric" value="${Math.round(b.ek)}" onchange="updateEk(this.value)"><span class="unit">€</span></div>
+              </div>
+              <div class="input-row" style="border-top: 1px solid var(--card2); margin-top: 4px; padding-top: 12px;">
+                <div><div class="input-label"><strong>Gesamtinvestition</strong></div></div>
+                <div style="color: var(--accent); font-weight: 700; font-family: ui-monospace, monospace;">${fmt(state.kp + b.nkEur)}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========== ERGEBNISSE UNTEN ========== -->
+
+          <div style="margin: 24px 0 16px; padding-top: 16px; border-top: 2px solid var(--card2);">
+            <div style="text-align: center; font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 1px;">Ergebnisse</div>
+          </div>
+
+          <!-- ANGEBOTSPREIS-EMPFEHLUNG -->
+          <div class="angebot">
+            <div class="angebot-title">Dein Max. Angebotspreis</div>
+            <div class="angebot-value">${fmt(b.kpCfNeutral)}</div>
+            <div class="angebot-sub">JNKM - 15% Bewirt. = Kreditrate (CF = 0)</div>
+            <div class="angebot-details">
+              <div class="angebot-row">
+                <span class="angebot-row-label">Aktueller Angebotspreis</span>
+                <span class="angebot-row-value">${fmt(state.kp)}</span>
+              </div>
+              <div class="angebot-row">
+                <span class="angebot-row-label">Verhandlungsspielraum</span>
+                <span class="angebot-row-value ${b.kpDiffCfNeutral <= 0 ? 'green' : 'red'}">${b.kpDiffCfNeutral > 0 ? 'Zu teuer um ' : 'Spielraum '}${fmt(Math.abs(b.kpDiffCfNeutral))}</span>
+              </div>
+              <div class="angebot-row">
+                <span class="angebot-row-label">JNKM</span>
+                <span class="angebot-row-value">${fmt(b.istMieteJahr)}</span>
+              </div>
+              <div class="angebot-row">
+                <span class="angebot-row-label">Kreditrate</span>
+                <span class="angebot-row-value">${(state.zins + state.tilg).toFixed(1)}% (${state.zins}% + ${state.tilg}%)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- BANK MAX-ANGEBOT -->
+          <div class="angebot" style="background: linear-gradient(135deg, #0f1a2a 0%, #162040 100%); border-color: rgba(59, 130, 246, 0.4);">
+            <div class="angebot-title" style="color: var(--accent);">Max. KP (Bank-Sicht)</div>
+            <div class="angebot-value" style="color: var(--accent);">${fmt(b.kpBankCfNeutral)}</div>
+            <div class="angebot-sub">Bei diesem KP ist Bank-Cashflow = 0</div>
+            <div class="angebot-details">
+              <div class="angebot-row">
+                <span class="angebot-row-label">Aktueller Angebotspreis</span>
+                <span class="angebot-row-value">${fmt(state.kp)}</span>
+              </div>
+              <div class="angebot-row">
+                <span class="angebot-row-label">Verhandlungsspielraum</span>
+                <span class="angebot-row-value ${b.kpDiffBankCfNeutral <= 0 ? 'green' : 'red'}">${b.kpDiffBankCfNeutral > 0 ? 'Zu teuer um ' : 'Spielraum '}${fmt(Math.abs(b.kpDiffBankCfNeutral))}</span>
+              </div>
+              <div class="angebot-row">
+                <span class="angebot-row-label">Bank-Miete (75%)</span>
+                <span class="angebot-row-value">${fmt(b.bankMieteJahr)}/Jahr</span>
+              </div>
+              <div class="angebot-row">
+                <span class="angebot-row-label">Formel</span>
+                <span class="angebot-row-value" style="font-size: 11px;">(JNKM×0.75×0.85) / ${(state.zins + state.tilg).toFixed(1)}%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 Ampel-Checks -->
+          <div class="checks">
+            <div class="check ${b.checkCashflow ? 'pass' : 'fail'}">
+              <div class="check-left">
+                <div class="check-icon">${b.checkCashflow ? '✓' : '✗'}</div>
+                <div>
+                  <div class="check-label">Cashflow (Bank-Sicht)</div>
+                  <div class="check-sub">75% Miete, ${state.bewirtschaftung}% Bewirt.</div>
+                </div>
+              </div>
+              <div><div class="check-value">${fmt(b.cfBankMonat)}/M</div></div>
+            </div>
+
+            <div class="check ${b.checkEkRendite ? 'pass' : 'fail'}">
+              <div class="check-left">
+                <div class="check-icon">${b.checkEkRendite ? '✓' : '✗'}</div>
+                <div>
+                  <div class="check-label">EK-Rendite</div>
+                  <div class="check-sub">(CF + Tilgung) / EK, Ziel: ${state.zielEkRendite}%</div>
+                </div>
+              </div>
+              <div><div class="check-value">${pct(b.ekRendite)}</div></div>
+            </div>
+
+            <div class="check ${b.checkMarktwert ? 'pass' : 'fail'}">
+              <div class="check-left">
+                <div class="check-icon">${b.checkMarktwert ? '✓' : '✗'}</div>
+                <div><div class="check-label">KP unter 70% Marktwert</div></div>
+              </div>
+              <div><div class="check-value">${(b.kpZuMarktwert * 100).toFixed(0)}%</div></div>
+            </div>
+
+            <div class="check ${b.checkMietpotenzial ? 'pass' : 'fail'}">
+              <div class="check-left">
+                <div class="check-icon">${b.checkMietpotenzial ? '✓' : '✗'}</div>
+                <div>
+                  <div class="check-label">Mieterhöhung möglich?</div>
+                  <div class="check-sub">IST ${state.miete.toFixed(2)} → Markt ${b.effMarktmiete.toFixed(2)} €/m²</div>
+                </div>
+              </div>
+              <div>
+                <div class="check-value">${b.mietErhoehungMoeglich ? '+' + b.mietPotenzialProzent.toFixed(0) + '%' : 'Nein'}</div>
+                <div class="check-value-sub">${b.mietErhoehungMoeglich ? '+' + b.mietDiff.toFixed(2) + ' €/m²' : 'Am Limit'}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div class="summary">
+            <div class="summary-label">Ergebnis (${b.anzahlChecksOk}/4 Checks)</div>
+            <div class="summary-value">
+              ${b.alleChecksOk
+                ? '<strong style="color: var(--green)">Deal passt!</strong> Alle 4 Kriterien erfüllt.'
+                : '<strong style="color: var(--red)">Nachverhandeln!</strong> ' +
+                  [!b.checkCashflow ? 'CF negativ' : '', !b.checkEkRendite ? 'EK-Rendite zu niedrig' : '', !b.checkMarktwert ? 'KP zu hoch' : '', !b.checkMietpotenzial ? 'Keine Mietsteigerung' : ''].filter(Boolean).join(', ')
+              }
+            </div>
+          </div>
+
+          <!-- 1. Rendite -->
+          <div class="bank-info">
+            <div class="bank-info-title">Rendite (IST)</div>
+            <div class="bank-row">
+              <span class="bank-row-label">Brutto-Rendite</span>
+              <span class="bank-row-value">${pct(b.bruttoRendite)}</span>
+            </div>
+            <div class="bank-row">
+              <span class="bank-row-label">Faktor</span>
+              <span class="bank-row-value">${b.faktor.toFixed(1)}</span>
+            </div>
+            <div class="bank-row">
+              <span class="bank-row-label">Jahreskaltmiete</span>
+              <span class="bank-row-value">${fmt(b.istMieteJahr)}</span>
+            </div>
+          </div>
+
+          <!-- 2. Tatsächlicher Cashflow -->
+          <div class="bank-info">
+            <div class="bank-info-title">Tatsächlicher Cashflow</div>
+            <div class="bank-row">
+              <span class="bank-row-label">Nettokaltmiete p.a.</span>
+              <span class="bank-row-value">${fmt(b.istMieteJahr)}</span>
+            </div>
+            <div class="bank-row">
+              <span class="bank-row-label">Bewirtschaftung (15%)</span>
+              <span class="bank-row-value dim">-${fmt(b.bewirtschaftungRealNeu)}</span>
+            </div>
+            <div class="bank-row">
+              <span class="bank-row-label">Kreditrate</span>
+              <span class="bank-row-value dim">-${fmt(b.kapitaldienstJahr)}</span>
+            </div>
+            <div class="bank-row" style="border-top: 1px solid var(--card2); margin-top: 4px; padding-top: 12px;">
+              <span class="bank-row-label"><strong>Cashflow p.a.</strong></span>
+              <span class="bank-row-value ${b.cfRealJahr >= 0 ? 'green' : 'red'}"><strong>${fmt(b.cfRealJahr)}</strong></span>
+            </div>
+            <div class="bank-row">
+              <span class="bank-row-label"><strong>Cashflow/Monat</strong></span>
+              <span class="bank-row-value ${b.cfRealMonat >= 0 ? 'green' : 'red'}"><strong>${fmt(b.cfRealMonat)}</strong></span>
+            </div>
+          </div>
+
+          <!-- 3. Bank-Kalkulation -->
+          <div class="bank-info">
+            <div class="bank-info-title">Bank-Kalkulation (konservativ)</div>
+            <div class="bank-row">
+              <span class="bank-row-label">Bank-Miete (75%)</span>
+              <span class="bank-row-value">${fmt(b.bankMieteJahr)}</span>
+            </div>
+            <div class="bank-row">
+              <span class="bank-row-label">Bewirtschaftung (${state.bewirtschaftung}%)</span>
+              <span class="bank-row-value dim">-${fmt(b.bewirtschaftungJahr)}</span>
+            </div>
+            <div class="bank-row">
+              <span class="bank-row-label">Kapitaldienst</span>
+              <span class="bank-row-value dim">-${fmt(b.kapitaldienstJahr)}</span>
+            </div>
+            <div class="bank-row" style="border-top: 1px solid var(--card2); margin-top: 4px; padding-top: 12px;">
+              <span class="bank-row-label"><strong>Bank-Cashflow p.a.</strong></span>
+              <span class="bank-row-value ${b.cfBankJahr >= 0 ? 'green' : 'red'}"><strong>${fmt(b.cfBankJahr)}</strong></span>
+            </div>
+          </div>
+
+          <!-- 4. Szenario: Nach 15% Mietsteigerung -->
+          <div class="szenario">
+            <div class="szenario-title">Szenario: Nach 15% Mietsteigerung</div>
+            <div class="szenario-row">
+              <span class="szenario-label">Neue Miete</span>
+              <span class="szenario-value">${b.mieteNach15.toFixed(2)} €/m² (+${(state.miete * 0.15).toFixed(2)} €)</span>
+            </div>
+            <div class="szenario-row">
+              <span class="szenario-label">Noch unter Marktmiete?</span>
+              <span class="szenario-value ${b.noch15MoeglichNach ? 'green' : 'red'}">${b.noch15MoeglichNach ? 'Ja (' + b.mieteNach15Diff.toFixed(2) + ' € Reserve)' : 'Nein (am Limit)'}</span>
+            </div>
+            <div class="szenario-divider"></div>
+            <div class="szenario-row">
+              <span class="szenario-label">Tatsächl. CF nach 15%</span>
+              <span class="szenario-value ${b.cfRealNach15Monat >= 0 ? 'green' : 'red'}">${fmt(b.cfRealNach15Monat)}/M</span>
+            </div>
+            <div class="szenario-row">
+              <span class="szenario-label">Bank-CF nach 15%</span>
+              <span class="szenario-value ${b.cfNach15Monat >= 0 ? 'green' : 'red'}">${fmt(b.cfNach15Monat)}/M</span>
+            </div>
+            <div class="szenario-row">
+              <span class="szenario-label">EK-Rendite nach 15%</span>
+              <span class="szenario-value ${b.ekRenditeNach15 >= state.zielEkRendite/100 ? 'green' : 'red'}">${pct(b.ekRenditeNach15)}</span>
+            </div>
+            <div class="szenario-row">
+              <span class="szenario-label">Brutto-Rendite / Faktor</span>
+              <span class="szenario-value">${pct(b.bruttoRenditeNach15)} / ${b.faktorNach15.toFixed(1)}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    };
+
+    const update = (key, value) => { state[key] = parseFloat(value) || 0; save(); render(); };
+    const updateStandort = (value) => { state.standort = value; save(); render(); };
+    const updateEk = (value) => {
+      const val = parseFloat(value) || 0;
+      const autoEk = state.kp * (state.nk / 100);
+      state.ekManual = Math.abs(val - autoEk) < 1 ? null : val;
+      save(); render();
+    };
+    const resetEk = () => { state.ekManual = null; save(); render(); };
+    const toggle = (section) => { state.sections[section] = !state.sections[section]; save(); render(); };
+
+    render();
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => {}); }
+  </script>
+</body>
+</html>
